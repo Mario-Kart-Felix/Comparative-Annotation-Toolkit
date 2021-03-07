@@ -1,0 +1,10 @@
+Sometimes you want to use a vanilla Ruby method like a block. You can use Object#method to obtain a method reference that responds to #call:
+
+COPY
+foo_plus = "foo".method(:+)
+foo_plus.call("bar") # => "foobar"
+The method reference also understands #to_proc so you can feed it to block-taking methods by prefixing it with &:
+
+COPY
+printer = method(:puts)
+[1, 2, 3].each(&printer) # will print one line per number
