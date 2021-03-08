@@ -1,0 +1,78 @@
+{
+  "name": "Smart meter data",
+  "context": {
+    "tagline": "How might we provide smart meter data autonomy for prosumers in order for anyone mandated to use the smart meter data to create new feedback loops and invent new business models?",
+    "why we're looking for help": "Smart meters have been introduced in European households with varying degrees of success. In the Netherlands, 73% of households now have a smart meter, in Germany 0%. The EU at least 80% of electricity meters with smart meters by 2020 wherever this is cost-effective. \n The smart meter is key to success in becoming a fossil-free continent, with emphasis on consumers becoming prosumers and on decentralized renewables instead of mainly centralized energy plants: without the data from the end user, every stakeholder (TSO, DSO, energy supplier, energy service company etc.) is left in the dark. \n Current smart meter data collection and unlocking for stakeholders is centralized (DSOs are the gatekeeper, single point of failure), closed (access for mandated stakeholders only) and has a 24-hr delay. Looking at the possibilities decentralized technologies offer us, this is a suboptimal model for the future EU prosumer-driven energy market.",
+    "impact": "Real-time and higher-quality data and a transparent and inclusive system unlock new solutions and business models. The switch from privacy-by-law to privacy-by-design is more reflective of the actual and desired situation, more GDPR-robust and leads to more opportunities for consumers to go to market with their data.",
+    "what we're building": "The challenge for the teams and everyone helping them: Create a publicly owned and privacy-by-design smart meter energy data exchange protocol, incentivizing all consumers and mandated stakeholders to contribute and use data. Starting with the Dutch and Swedish energy market, the solution is scalable for Europe. The protocol has an incentive model for self-maintenance and focuses on solving disturbances and on high-quality smart meter data.",
+    "who": "Vattenfall is inviting homeowners, DSOs, regulators, energy suppliers, smart meter manufacturers, and many other stakeholders</span> to work with the teams, be the first to test and give feedback to the solutions, and then help launch the best solutions.",
+    "lifecyclePhase": "Defined",
+    "references": [
+      {
+        "name": "video",
+        "uri": "https://youtu.be/03OnRDSiQZU",
+        "description": "Video explainer for the challenge"
+      },
+      {
+        "name": "visual",
+        "uri": "https://www.odyssey.org/wp-content/uploads/2019/11/P.-12.-Fossil-Fuel-Free-Future-Vattenfall2-scaled.jpg",
+        "description": "Visual for the challenge"
+      }
+    ]
+  },
+  "tags": [
+    {
+      "name": "Java2"
+    },
+    {
+      "name": "Industry2"
+    },
+    {
+      "name": "Energy"
+    }
+  ],
+  "groups": [
+    {
+      "name": "firstGroup"
+    }
+  ]
+}
+{
+  "name": "Smart meter data",
+  "context": {
+    "tagline": "How might we provide smart meter data autonomy for prosumers in order for anyone mandated to use the smart meter data to create new feedback loops and invent new business models?",
+    "why we're looking for help": "Smart meters have been introduced in European households with varying degrees of success. In the Netherlands, 73% of households now have a smart meter, in Germany 0%. The EU at least 80% of electricity meters with smart meters by 2020 wherever this is cost-effective. \n The smart meter is key to success in becoming a fossil-free continent, with emphasis on consumers becoming prosumers and on decentralized renewables instead of mainly centralized energy plants: without the data from the end user, every stakeholder (TSO, DSO, energy supplier, energy service company etc.) is left in the dark. \n Current smart meter data collection and unlocking for stakeholders is centralized (DSOs are the gatekeeper, single point of failure), closed (access for mandated stakeholders only) and has a 24-hr delay. Looking at the possibilities decentralized technologies offer us, this is a suboptimal model for the future EU prosumer-driven energy market.",
+    "impact": "Real-time and higher-quality data and a transparent and inclusive system unlock new solutions and business models. The switch from privacy-by-law to privacy-by-design is more reflective of the actual and desired situation, more GDPR-robust and leads to more opportunities for consumers to go to market with their data.",
+    "what we're building": "The challenge for the teams and everyone helping them: Create a publicly owned and privacy-by-design smart meter energy data exchange protocol, incentivizing all consumers and mandated stakeholders to contribute and use data. Starting with the Dutch and Swedish energy market, the solution is scalable for Europe. The protocol has an incentive model for self-maintenance and focuses on solving disturbances and on high-quality smart meter data.",
+    "who": "Vattenfall is inviting homeowners, DSOs, regulators, energy suppliers, smart meter manufacturers, and many other stakeholders</span> to work with the teams, be the first to test and give feedback to the solutions, and then help launch the best solutions.",
+    "lifecyclePhase": "Defined",
+    "references": [
+      {
+        "name": "video",
+        "uri": "https://youtu.be/03OnRDSiQZU",
+        "description": "Video explainer for the challenge"
+      },
+      {
+        "name": "visual",
+        "uri": "https://www.odyssey.org/wp-content/uploads/2019/11/P.-12.-Fossil-Fuel-Free-Future-Vattenfall2-scaled.jpg",
+        "description": "Visual for the challenge"
+      }
+    ]
+  },
+  "tags": [
+    {
+      "name": "Java2"
+    },
+    {
+      "name": "Industry2"
+    },
+    {
+      "name": "Energy"
+    }
+  ],
+  "groups": [
+    {
+      "name": "firstGroup"
+    }
+  ]
+}
