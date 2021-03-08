@@ -1,0 +1,15 @@
+Upgrade lodash.template to version 4.5.0 or later. For example:
+
+lodash.template@^4.5.0:
+  version "4.5.0"
+Always verify the validity and compatibility of suggestions with your codebase.
+
+Details
+CVE-2019-10744
+high severity
+Vulnerable versions: < 7.5.0
+Patched version: 6.5.0
+Versions of lodash before 4.17.12 are vulnerable to Prototype Pollution. The function defaultsDeep allows a malicious user to modify the prototype of Object via {constructor: {prototype: {...}}} causing the addition or modification of an existing property that will exist on all objects.
+
+Recommendation
+Update to version 4.17.12 or later.
