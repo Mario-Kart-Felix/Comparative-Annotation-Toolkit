@@ -1,0 +1,20 @@
+Moderators can delete content if they consider it:
+
+spam
+off-topic
+offensive
+controversial
+obsolete
+Moderators should not delete other kinds of content. In particular, moderators are not entitled to assess the quality or lack of quality of content on the website.
+
+Moderators should be careful not to delete content which they cannot read due to different character encodings. In particular, some content can appear with '?' characters to some users/moderatoris, and this content should not be deleted.
+
+Moderators should not delete for other reasons. In particular, moderators are not entitled to assess the quality or lack of quality of content on the website.
+
+Moderators can edit Ideas - this should be used with caution,it's purpose is for clarification without altering the sense of the text.
+
+Moderators can delete comments and should do so if they contain spam,obscenities or abusive or inflammatory comments directed towards other users or moderators.
+
+Moderators may warn users about this sort of conduct either in PM or by posting a comment of their own.
+
+If a user persists in posting obscenities or abusive or inflammatory comments moderators have the option to delete their accounts and all their contributions.
