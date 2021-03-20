@@ -1,0 +1,894 @@
+The goal of this document is to provide a single point of information for developers interested in improving Vala.
+
+It is hoped that this document will encourage more Vala users to contribute to Vala by finding/fixing bugs, writing documentation, writing test-cases, and implementing new features.
+
+In the opinion of this document's author, a quality Vala 1.0 is an important part of the future of the GNOME Platform, because it will simplify the task of creating and maintaining excellent language-neutral libraries, which are necessary for the next generation of applications.
+
+The Vala code is fresh, and easy to read. The variable and class names are descriptive, and one often has a general feel of what the code is supposed to do, so the sparse comments are generally not a problem. However, because it is a compiler, Vala is inevitably long, and its call stack deep. This document should provide a high-level view of how Vala is put together.
+
+This document has been ported from docbook to this wiki in order to be team-maintained and more up-to-date with latest releases of the Vala compiler.
+
+Environment Issues
+Compiling from the Source Repository
+The Vala README.md file contains full and up to date instructions on how to download and compile Vala from the git repository.
+
+Setting up your editor
+A list of IDE(s) with Vala support is available.
+
+Vala support is available also for build tools and editors.
+
+Coding Style
+The coding style used in Vala itself seems to be a variation of the GTK+ coding style.
+
+Tabs rather than spaces.
+Tab width unspecified, but 4 works well.
+Hanging braces.
+Cuddled else.
+Braces necessary for single-line blocks.
+Variable and method identifiers in lowercase, words seperated by underscores.
+Type identifiers in CamelCase.
+
+Enum members and constants in ALL_CAPS, words seperated by underscores.
+C-style /* comments. */
+
+Hungarian notation not used.
+Variables are often declared with implicit type (i.e. var foo = new Foo ()).
+
+No line-length limit.
+No function-length limit.
+Space between method name and parameters' opening parenthesis.
+Property get, set, default declaration all on one line, seperated by semicolons, if default implementations are used.
+
+If properties have implementations, then get {, set { open new lines.
+
+Attributes on their own line.
+JavaDoc-style commenting on types, methods, variables.
+
+Header at top of file contains:
+
+/* filename.vala
+ *
+ * Copyright (C) 20yy-20yy  Copyright Holder <email@address>
+ *
+ * License text.
+ *
+ * Author:
+ *      Programmer Name <programmer@email>
+ */
+Files
+Vala source files are named in the GTK+ style, i.e. all lowercase, with no separators between words, in the format namespaceclassname.vala. For example, the filename for Vala.FormalParameter is valaformalparameter.vala.
+
+For the Vala compiler and library there is only one namespace, and it is called "Vala". Don't put "using Vala;"; instead qualify the name of types you declare. For example "class Vala.FormalParameter : Symbol".
+
+Website, Mailing List, Bug Tracker, IRC
+http://www.vala-project.org
+
+For Vala usage discussion: <vala-list@gnome.org> (info page)
+
+For Vala development discussion: <vala-devel-list@gnome.org> (info page)
+
+GNOME GitLab issues - https://gitlab.gnome.org/GNOME/vala/issues
+
+#vala on GIMPnet
+
+Project Maintainers
+The principal authors and project maintainers are Jürg Billeter and Raffaele Sandrini.
+
+License
+Vala compiler is licensed under LGPL 2.1, so that proprietary programs compiled with Vala can be distributed under different licenses and possibly without source code.
+
+The Vala Compiler
+I suppose the best place to start is valac, the tool which Vala programmers know the best.
+
+Vala in a Nutshell
+The Vala compiler valac is a small shell around libvala which handles command-line arguments, locates the sources and libraries which are required, and drives the compilation procedure.
+
+How valac is linked
+
+How valac is linked
+
+All the important work such as parsing, error checking/reporting, code generation, calling gcc, is done in libvala.
+
+The code for valac can be found in compiler/valacompiler.vala.
+
+Command-line Options
+These are handled in the normal way by the Vala binding to GLib.OptionContext. Most of the instance variables in Vala.Compiler are referenced in the options array. It's not very interesting.
+
+The Compilation Procedure and Vala.CodeContext
+Vala.Compiler plugs together the classes of libvala in a big pipeline. This modular design makes Vala more maintainable and external tools can easily use this code.
+
+The valac Pipeline
+Initialize CodeContext with command-line options.
+
+Add packages from command-line and others depending on the profile.
+Add sources, Vala, Genie, Gir, VAPI, and C from command-line.
+Parse everything.
+Resolve symbols.
+Run the Semantic Analyzer.
+Run the Flow Analyzer.
+Use the code generator to emit code.
+Write out VAPI and GIDL files, if a library is being compiled.
+Compile the generated C code.
+The individual steps will be explained later, but first Vala.CodeContext, the data structure which holds everything together. It stores the compile options which were specified on the command line, and a list of source files to compile. There is only one CodeContext instantiated and its reference is passed around a lot, so effectively it's a global variable.
+
+Vala.CodeContext is the root of the code tree, because it contains the root Namespace, which holds references to all parsed code nodes. In addition to the code tree, the context contains a reference to a code generator object. This object walks the code tree and generates code.
+
+Vala.CodeContext contains an important method called accept, which initiates a depth-first traversal of the code tree. This method, and the CodeVisitor pattern will be discussed later.
+
+Data diagram
+
+Data diagram
+
+The Vala code tree is an abstract syntax tree (AST) built by parsing the Vala sources. For example, if you see a class called Vala.Destructor which inherits Vala.Symbol, then it is a part of the AST. Data structures for the AST and the parser which builds it are in the vala directory.
+
+Vala also uses a tree to represent the C ccode that will be output. Data structures for the C code (CCode classes) tree are in the ccode directory.
+
+The machinery which transforms the Vala AST into a C code tree is in the codegen directory arranged in a modular visitor. The AST is traversed and a CCode tree is created.
+
+Vala is split upon these lines, most probably to break the system into conceptually-related, understandable chunks. However, with suitable modifications, the different modules could be replaced. Conceivably, Vala could produce non-GObject C code. More realistically, Vala could produce intermediate code as a GCC frontend.
+
+Parser
+The parser reads Vala and VAPI code and outputs an AST. In the eyes of the parser, Vala and VAPI are the same thing. The difference to us is that VAPI files never have method definitions, but the parser will read pretty much everything as long as it seems syntactically correct. Most errors are caught later by the Semantic Analyzer.
+
+
+Before 0.3.1, Vala's parser was the classic flex scanner and Bison LALR parser combination. But as of Commit eba85a, the parser is a hand-crafted recursive descent parser. The parser is in vala/valaparser.vala and its lexer is in vala/valascanner.vala.
+
+The entry point of the parser is Vala.Parser.parse(). This method is called by Vala.Compiler.run(). Vala.Parser is an implementation of Vala.CodeVisitor for source files.
+
+Visitors and Ping Pong
+CodeVisitor is an abstract base class which provides 75 empty virtual methods for each kind of code node. A class which inherits CodeVisitor is supposed to do some kind of processing of the code tree. Here are all the CodeVisitor classes in Vala:
+
+public abstract class Vala.CodeVisitor
+public class Vala.CodeGenerator : CodeVisitor
+public class Vala.CodeWriter : CodeVisitor
+public class Vala.FlowAnalyzer : CodeVisitor
+public class Vala.GenieParser : CodeVisitor
+public class Vala.GirParser : CodeVisitor
+public class Vala.GIdlParser : CodeVisitor
+public class Vala.Parser : CodeVisitor
+public class Vala.SemanticAnalyzer : CodeVisitor
+public class Vala.SymbolResolver : CodeVisitor
+CodeVisitor works closely with the different Vala.CodeNode classes to traverse the code tree. Here are all the code node types in Vala grouped by superclass:
+
+
+public abstract class Vala.CodeNode
+
+public class Vala.Attribute : CodeNode
+public class Vala.CatchClause : CodeNode
+public abstract class Vala.DataType : CodeNode
+public abstract class Vala.Expression : CodeNode
+public class Vala.MemberInitializer : CodeNode
+public interface Vala.Statement : CodeNode
+public class Vala.SwitchLabel : CodeNode
+public abstract class Vala.Symbol : CodeNode
+public class Vala.UsingDirective : CodeNode
+Data types:
+
+public class Vala.CType : DataType
+public class Vala.DelegateType : DataType
+public class Vala.FieldPrototype : DataType
+public class Vala.GenericType : DataType
+public class Vala.InvalidType : DataType
+public class Vala.MethodType : DataType
+public class Vala.PointerType : DataType
+public abstract class Vala.ReferenceType : DataType
+public class Vala.SignalType : DataType
+public class Vala.UnresolvedType : DataType
+public abstract class Vala.ValueType : DataType
+public class Vala.VoidType : DataType
+Reference data types:
+
+public class Vala.ArrayType : ReferenceType
+public class Vala.ClassType : ReferenceType
+public class Vala.ErrorType : ReferenceType
+public class Vala.InterfaceType : ReferenceType
+public class Vala.NullType : ReferenceType
+public class Vala.ObjectType : ReferenceType
+Value data types:
+
+public class Vala.BooleanType : ValueType
+public class Vala.EnumValueType : ValueType
+public class Vala.FloatingType : ValueType
+public class Vala.IntegerType : ValueType
+public class Vala.StructValueType : ValueType
+Expressions:
+
+public class Vala.AddressofExpression : Expression
+public class Vala.ArrayCreationExpression : Expression
+public class Vala.Assignment : Expression
+public class Vala.BaseAccess : Expression
+public class Vala.BinaryExpression : Expression
+public class Vala.CastExpression : Expression
+public class Vala.ConditionalExpression : Expression
+public class Vala.ElementAccess : Expression
+public class Vala.InitializerList : Expression
+public class Vala.LambdaExpression : Expression
+public abstract class Vala.Literal : Expression
+public class Vala.MemberAccess : Expression
+public class Vala.MethodCall : Expression
+public class Vala.NamedArgument : Expression
+public class Vala.ObjectCreationExpression : Expression
+public class Vala.PointerIndirection : Expression
+public class Vala.PostfixExpression : Expression
+public class Vala.ReferenceTransferExpression : Expression
+public class Vala.SizeofExpression : Expression
+public class Vala.SliceExpression : Expression
+public class Vala.Template : Expression
+public class Vala.Tuple : Expression
+public class Vala.TypeCheck : Expression
+public class Vala.TypeofExpression : Expression
+public class Vala.UnaryExpression : Expression
+Literal expressions:
+
+public class Vala.BooleanLiteral : Literal
+public class Vala.CharacterLiteral : Literal
+public class Vala.IntegerLiteral : Literal
+public class Vala.ListLiteral : Literal
+public class Vala.MapLiteral : Literal
+public class Vala.NullLiteral : Literal
+public class Vala.RealLiteral : Literal
+public class Vala.RegexLiteral : Literal
+public class Vala.SetLiteral : Literal
+public class Vala.StringLiteral : Literal
+Statements:
+
+public class Vala.BreakStatement : CodeNode, Statement
+public class Vala.ContinueStatement : CodeNode, Statement
+public class Vala.DeclarationStatement : CodeNode, Statement
+public class Vala.DeleteStatement : CodeNode, Statement
+public class Vala.DoStatement : CodeNode, Statement
+public class Vala.EmptyStatement : CodeNode, Statement
+public class Vala.ExpressionStatement : CodeNode, Statement
+public class Vala.ForStatement : CodeNode, Statement
+public class Vala.IfStatement : CodeNode, Statement
+public class Vala.LockStatement : CodeNode, Statement
+public class Vala.Loop : CodeNode, Statement
+public class Vala.ReturnStatement : CodeNode, Statement
+public class Vala.StatementList : CodeNode, Statement
+public class Vala.SwitchStatement : CodeNode, Statement
+public class Vala.ThrowStatement : CodeNode, Statement
+public class Vala.TryStatement : CodeNode, Statement
+public class Vala.UnlockStatement : CodeNode, Statement
+public class Vala.WhileStatement : CodeNode, Statement
+public class Vala.YieldStatement : CodeNode, Statement
+Symbols:
+
+public class Vala.Block : Symbol, Statement
+public class Vala.Constructor : Symbol
+public class Vala.Destructor : Symbol
+public class Vala.EnumValue : Symbol
+public class Vala.FormalParameter : Symbol
+public class Vala.LocalVariable : Symbol
+public abstract class Vala.Member : Symbol
+public class Vala.Namespace : Symbol
+public class Vala.PropertyAccessor : Symbol
+public class Vala.TypeParameter : Symbol
+public abstract class Vala.TypeSymbol : Symbol
+public class Vala.UnresolvedSymbol : Symbol
+Members:
+
+public interface Vala.Lockable
+
+public class Vala.Constant : Member, Lockable
+public class Vala.Field : Member, Lockable
+public class Vala.Method : Member
+public class Vala.Property : Member, Lockable
+public class Vala.Signal : Member, Lockable
+Type symbols:
+
+public class Vala.Delegate : TypeSymbol
+public class Vala.Enum : TypeSymbol
+public class Vala.ErrorCode : TypeSymbol
+public class Vala.ErrorDomain : TypeSymbol
+public abstract class Vala.ObjectTypeSymbol : TypeSymbol
+public class Vala.Struct : TypeSymbol
+Last but not least:
+
+public class Vala.Comment
+public class Vala.Scope
+public class Vala.SourceFile
+public class Vala.SourceReference
+The SourceFile class is an exception when visiting nodes, because it's not a CodeNode but there is a visit_source_file in the CodeVisitor.
+
+All CodeNodes except the root have a non-null parent CodeNode. Some specializations of CodeNode may have children. The type and number of children are declared in the specialized class.
+
+The two important methods in a CodeNode are accept and accept_children. The accept() method lets the node declare to the CodeVisitor what it is, so the CodeVisitor can act on it. For example, Vala.Struct.accept():
+
+        public override void accept (CodeVisitor visitor) {
+                visitor.visit_struct (this); /* I am a struct! */
+        }
+The accept_children() method lets the node accept all of its children so they can declare themselves to the CodeVisitor. This is the recursive part of the traversal. For example, a Struct code node has a list of base types, type parameters, fields, constants, and methods. Vala.Struct.accept_children() accepts all of these.
+
+        public override void accept_children (CodeVisitor visitor) {
+                if (base_type != null) {
+                        base_type.accept (visitor);
+                }
+
+                foreach (TypeParameter p in type_parameters) {
+                        p.accept (visitor);
+                }
+
+                foreach (Field f in fields) {
+                        f.accept (visitor);
+                }
+
+                foreach (Constant c in constants) {
+                        c.accept (visitor);
+                }
+
+                foreach (Method m in methods) {
+                        m.accept (visitor);
+                }
+
+                foreach (Property prop in properties) {
+                        prop.accept (visitor);
+                }
+        }
+As you can see, the CodeVisitor is repeatedly asked to visit different code nodes. It can do whatever analysis is necessary and then traverse deeper into the code tree. This is what a hypothetical implementation of XmlGenerator.visit_struct() might look like:
+
+     public override void visit_struct (Struct st) {
+         /* Do some processing of this struct. */
+         stdout.printf ("<vala:struct name=\"%s\">\n", st.name);
+
+         /* recurse through struct's children */
+         st.accept_children (this);
+
+         /* Do some more processing of the struct, now that its
+          * children have been accepted. */
+         stdout.printf ("</vala:struct>\n");
+     }
+The visit_ methods of a CodeVisitor needn't call CodeNode.accept_children(), if it isn't necessary to traverse the whole depth of the code tree. It also isn't necessary to write visit_ methods for every kind of code node, because empty implementations are already provided in CodeVisitor.
+
+What does this have to do with ping pong? Well, the flow of control bounces between the CodeVisitor and the CodeNodes: accept, visit, accept, visit, ... When you navigate the code you will probably find yourself bouncing between different classes.
+
+Back to the Parser
+Vala.Parser is a highly specialized CodeVisitor - the only type of code node it visits is a Vala.SourceFile. However the Parser calls back to the context and uses it to create code nodes (mentioned before), then adds these code nodes into the context's root code node.
+
+Error Handling
+I don't want to spoil your fun too much by going into the details of the parser, other than that every parse_ function can throw a ParseError. ParseError is caught when parsing a block or the declarations of a namespace, class, struct, or interface. Fixme.
+
+Grammar of Vala
+This grammar is hand-generated from Vala.Parser. Sometimes the structure of this grammar diverges slightly from the code, for example optional non-terminal symbols. However the non-terminal symbol names usually match a parse_ method in Vala.Parser.
+
+More literal-specific grammar at http://www.vala-project.org/doc/vala/
+
+// parse_file
+input ::= using_directive* namespace_member*
+
+// parse_using_directives
+using_directive ::= "using" symbol [ "," symbol ]* ";"
+
+// parse_symbol_name
+symbol ::= symbol_part [ "." symbol_part ]*
+
+symbol_part ::= ( "global::" identifier ) | identifier
+
+namespace_member ::= [ attributes ]
+                     ( namespace_declaration |
+                       class_declaration |
+                       interface_declaration |
+                       struct_declaration |
+                       enum_declaration |
+                       errordomain_declaration |
+                       method_declaration |
+                       field_declaration |
+                       constant_declaration )
+
+attributes ::= attribute*
+
+attribute ::= "[" identifier [ attribute_arguments ] "]"
+
+attribute_arguments ::= "(" attribute_argument [ "," attribute_argument ]* ")"
+
+attribute_argument ::= identifier "=" expression
+
+expression ::= lambda_expression | ( conditional_expression [ assignment_operator expression ] )
+
+// get_assignment_operator plus >>=
+assignment_operator ::= "=" | "+=" | "-=" | "|=" | "&=" | "^=" | "/=" | "*=" | "%=" | "<<=" | ">>="
+
+conditional_expression ::= coalescing_expression [ "?" expression ":" expression ]
+
+coalescing_expression ::= conditional_or_expression [ "??" coalescing_expression ]
+
+conditional_or_expression ::= conditional_and_expression [ "||" conditional_and_expression ]
+
+conditional_and_expression ::= in_expression [ "&&" in_expression ]
+
+in_expression ::= inclusive_or_expression [ "in" inclusive_or_expression ]
+
+inclusive_or_expression ::= exclusive_or_expression [ "|" exclusive_or_expression ]
+
+exclusive_or_expression ::= and_expression [ "^" and_expression ]
+
+and_expression ::= equality_expression [ "&" equality_expression ]
+
+equality_expression ::= relational_expression [ ( "==" | "!=" ) relational_expression ]*
+
+relational_expression ::= shift_expression [ ( "<" | "<=" | ">" | ">=" ) shift_expression ) |
+                                             ( "is" type ) | ( "as" type ) ]*
+
+// parse_type
+type ::= ( "void" [ "*" ]* ) | ( [ "dynamic" ] [ "unowned" ] symbol [ type_arguments ] [ "*" ]* [ "?" ] array_type* )
+
+// parse_type can_weak
+type_weak ::= ( "void" [ "*" ]* ) | ( [ "dynamic" ] [ "unowned" | "weak" ] symbol [ type_arguments ] [ "*" ]* [ "?" ] array_type* )
+
+array_type ::= "[" array_size "]" [ "?" ]
+
+shift_expression ::= additive_expression [ ( "<<" | ">>" ) additive_expression ]*
+
+additive_expression ::= multiplicative_expression [ ( "+" | "-" ) multiplicative_expression ]*
+
+multiplicative_expression ::= unary_expression [ ( "*" | "/" | "%" ) unary_expression ]*
+
+unary_expression ::= ( unary_operator unary_expression ) |
+                     ( "(" ( "owned" | "void" | "dynamic" | "!" | type ) ")" unary_expression ) | 
+                     primary_expression
+
+// get_unary_operator
+unary_operator ::= "+" | "-" | "!" | "~" | "++" | "--" | "*" | "&" | "(owned)" | "(void)" | "(dynamic)" | "(!)"
+
+primary_expression ::= ( literal | initializer | tuple | template | open_regex_literal | this_access | base_access |
+                       object_or_array_creation_expression | yield_expression | sizeof_expression | typeof_expression |
+                       simple_name )
+                       [ member_access | pointer_member_access | method_call | element_access |
+                         post_increment_expression | post_decrement_expression ]*
+
+literal ::= "true" | "false" | "null" | integer_literal | real_literal | character_literal | regex_literal |
+            string_literal | template_string_literal | verbatim_string_literal
+
+initializer ::= "{" argument [ "," argument ]* "}"
+
+// parse_argument_list
+arguments ::= argument [ "," argument ]*
+
+argument ::= "ref" expression | "out" expression | expression | identifier [ ":" expression ]
+
+tuple ::= "(" expression [ "," expression ]* ")"
+
+template ::= '@"' [ expression "," ]* '"'
+
+// parse_regex_literal
+open_regex_literal ::= "/" literal
+
+this_access ::= "this"
+
+base_access ::= "base"
+
+object_or_array_creation_expression ::= "new" member ( object_creation_expression | array_creation_expression )
+
+object_creation_expression ::= "(" [ arguments ] ")" [ object_initializer ]
+
+object_initializer ::= "{" member_initializer [ "," member_initializer ] "}"
+
+member_initializer ::= identifier "=" expression
+
+array_creation_expression ::= [ "[" "]" ]* [ "[" [ array_size ] "]" ] [ initializer ]
+
+array_size ::= expression [ "," expression ]*
+
+// parse_member_name
+member ::= member_part [ "." member_part ]*
+
+member_part ::= ( "global::" identifier || identifier ) [ type_arguments ]
+
+// parse_type_argument_list
+type_arguments ::= "<" type [ "," type ]* ">"
+
+yield_expression ::= "yield" [ base_access "." ] member method_call
+
+method_call ::= "(" [ arguments ] ")" [ object_initializer ]
+
+sizeof_expression ::= "sizeof" "(" type ")"
+
+typeof_expression ::= "typeof" "(" type ")"
+
+simple_name ::= ( "global::" identifier | identifier ) [ type_arguments ]
+
+lambda_expression ::= lambda_expression_params "=>" lambda_expression_body
+
+lambda_expression_params ::= identifier | ( "(" [ identifier [ "," identifier ]* ] ")" )
+
+lambda_expression_body ::= expression | block
+
+member_declaration_modifiers ::= member_declaration_modifier [ " " member_declaration_modifier ]*
+member_declaration_modifier ::= "async" | "class" | "extern" | "inline" | "static" | "abstract" | "virtual" | "override" | "new"
+
+constructor_declaration ::= [ constructor_declaration_modifiers ] "construct" block
+
+constructor_declaration_modifiers ::= constructor_declaration_modifier [ " " constructor_declaration_modifier ]*
+constructor_declaration_modifier ::= "async" | "class" | "extern" | "inline" | "static" | "abstract" | "virtual" | "override"
+
+destructor_declaration ::= [ constructor_declaration_modifiers ] "~" "(" ")" block
+
+class_declaration ::= [ access_modifier ] [ type_declaration_modifiers ] "class" symbol [ type_arguments ]
+                      [ ":" base_types ] "{" class_member* "}"
+
+base_types ::= type [ "," type ]*
+
+class_member ::= [ attributes ]
+                 ( class_declaration |
+                   struct_declaration |
+                   enum_declaration |
+                   delegate_declaration |
+                   method_declaration |
+                   signal_declaration |
+                   field_declaration |
+                   constant_declaration |
+                   property_declaration |
+                   constructor_declaration |
+                   destructor_declaration )
+
+access_modifier ::= "private" "protected" "internal" "public"
+
+type_declaration_modifiers ::= type_declaration_modifier [ " " type_declaration_modifier ]*
+type_declaration_modifier ::= "abstract" | "extern" | "static"
+
+enum_declaration ::= [ access_modifier ] [ type_declaration_modifiers ] "enum" symbol
+                     "{" enumvalues [ ";" [ method_declaration | constant_declaration ]* ] "}"
+
+enumvalues ::= enumvalue [ "," enumvalue ]*
+enumvalue ::= [ attributes ] identifier [ "=" expression ]
+
+errordomain_declaration ::= [ access_modifier ] [ type_declaration_modifiers ] "errordomain" symbol
+                            "{" errorcodes [ ";" method_declaration* ] "}"
+
+errorcodes ::= errorcode [ "," errorcode ]*
+errorcode ::= [ attributes ] identifier [ "=" expression ]
+
+interface_declaration ::= [ access_modifier ] [ type_declaration_modifiers ] "interface" symbol [ type_parameters ]
+                          [ ":" base_types ] "{" interface_member* "}"
+
+// parse_type_parameter_list
+type_parameters ::= "<" identifier [ "," identifier ]* ">"
+
+interface_member ::= [ attributes ]
+                     ( class_declaration |
+                       struct_declaration |
+                       enum_declaration |
+                       delegate_declaration |
+                       method_declaration |
+                       signal_declaration |
+                       field_declaration |
+                       constant_declaration |
+                       property_declaration )
+
+namespace_declaration ::= "namespace" symbol "{" using_directive* namespace_member* "}"
+
+struct_declaration ::= [ access_modifier ] [ type_declaration_modifiers ] "struct" symbol
+                       [ ":" base_types ] "{" struct_member* "}"
+
+struct_member ::= [ attributes ] ( method_declaration | field_declaration | constant_declaration | property_declaration )
+
+creation_method_declaration ::= [ access_modifier ] [ constructor_declaration_modifiers ] symbol
+                                "(" [ parameters ] ")" [ throws ] [ requires ] [ ensures ] ( ";" | block )
+
+parameters ::= parameter [ "," parameter ]*
+
+parameter ::= [ attributes ] ( "..." | ( [ "params" ] [ "out" | "ref" ] type identifier [ "=" expression ] ) )
+
+throws ::= "throws" type [ "," type ]*
+
+requires ::= "requires" "(" expression ")" [ requires ]
+
+ensures ::= "ensures" "(" expression ")" [ ensures ]
+
+delegate_declaration ::= [ access_modifier ] [ delegate_declaration_modifiers ] type symbol [ type_parameters ]
+                         "(" [ parameters ] ")" [ throws ] ";"
+
+delegate_declaration_modifiers ::= delegate_declaration_modifier [ " " delegate_declaration_modifier ]*
+delegate_declaration_modifier ::= "async" | "class" | "extern" | "inline" | "abstract" | "virtual" | "override"
+
+signal_declaration ::= [ access_modifier ] [ signal_declaration_modifiers ] "signal" type identifier
+                       "(" [ parameters ] ")" ( ";" | block )
+
+signal_declaration_modifiers ::= signal_declaration_modifier [ " " signal_declaration_modifier ]*
+signal_declaration_modifier ::= "async" | "extern" | "inline" | "abstract" | "virtual" | "override" | "new"
+
+method_declaration ::= [ access_modifier ] [ member_declaration_modifier ] type identifier [ type_parameters ]
+                       "(" [ parameters ] ")" [ throws ] [ requires ] [ ensures ] ( ";" | block )
+
+constant_declaration ::= [ access_modifier ] [ member_declaration_modifiers ] "const" type identifier [ inline_array_type ]
+                         [ "=" expression ] ";"
+
+inline_array_type ::= "[" integer_literal "]"
+
+field_declaration ::= [ access_modifier ] [ member_declaration_modifiers ] type_weak identifier [ "=" expression ] ";"
+
+property_declaration ::= [ access_modifier ] [ property_declaration_modifiers ] type_weak identifier
+                         "{" property_declaration_part* "}"
+
+property_declaration_part ::= ( "default" "=" expression ";" ) | property_accessor
+
+property_accessor ::= [ attributes ] [ access_modifier ] ( property_get_accessor | property_set_construct_accessor )
+
+property_get_accessor ::= "get" ( ";" | block )
+
+property_set_construct_accessor ::= ( "set" "construct" | "construct" "set" ) ( ";" | block )
+
+property_declaration_modifiers ::= property_declaration_modifier [ " " property_declaration_modifier ]*
+property_declaration_modifier ::= "class" | "static" | "extern" | "inline" | "abstract" | "virtual" | "override" | "new"
+
+block ::= "{" statement* "}"
+
+// parse_statements
+statement ::= block | ";" | if_statement | switch_statement | while_statement | for_statement | foreach_statement |
+              break_statement | continue_statement | return_statement | yield_statement | throw_statement |
+              try_statement | lock_statement | delete_statement | local_variable_declarations | expression_statement
+
+if_statement ::= "if" "(" expression ")" embedded_statement [ "else" embedded_statement ]
+
+embedded_statement ::= block | embedded_statement_without_block
+
+embedded_statement_without_block ::= ";" | if_statement | switch_statement | while_statement | for_statement |
+                                     foreach_statement | break_statement | continue_statement | return_statement |
+                                     yield_statement | throw_statement | try_statement | lock_statement | delete_statement |
+                                     expression_statement
+
+switch_statement ::= "switch" "(" expression ")" "{" switch_section* "}"
+
+switch_section ::= ( "case" | "default" ) expression ":"
+
+while_statement ::= "while" "(" expression ")" embedded_statement
+
+do_statement ::= "do" embedded_statement "while" "(" expression ")" ";"
+
+for_statement ::= "for" "(" [ for_initializer ] ";" [ expression ] ";" [ for_iterator ] ")" embedded_statement
+
+for_initializer ::= local_variable_declarations | ( statement_expression [ "," statement_expression ]* )
+
+for_iterator ::= statement_expression [ "," statement_expression ]*
+
+statement_expression ::= expression
+
+foreach_statement ::= "foreach" "(" ( "var" | type) identifier "in" expression ")" embedded_statement
+
+break_statement ::= "break" ";"
+
+continue_statement ::= "continue" ";"
+
+return_statement ::= "return" [ expression ] ";"
+
+yield_statement ::= "yield" [ expression_statement | "return" expression ] ";"
+
+throw_statement ::= "throw" expression ";"
+
+try_statement ::= "try" block catch_clause* [ finally_clause ]
+
+catch_clause ::= "catch" [ "(" type_weak identifier ")" ] block
+
+finally_clause ::= "finally" block
+
+lock_statement ::= "lock" "(" expression ")" embedded_statement
+
+delete_statement ::= "delete" expression ";"
+
+local_variable_declarations ::= ( "var" | type ) local_variable_declaration [ "," local_variable_declaration ]*
+
+local_variable_declartion ::= local_tuple_declaration | local_variable
+
+local_tuple_declaration ::= "(" identifier [ "," identifier ]* ")" "=" expression
+
+local_variable ::= identifier [ inline_array_type ] [ "=" expression ]
+
+expression_statement ::= statement_expression ";"
+Semantic Analyzer
+Attribute Processing
+Vala.Attributes are code tree nodes and have a name and a possibly empty list of key-value arguments. Some types of code tree nodes have as children a list of Attributes. The attribute processor's purpose is to interpret the attributes which were parsed into the code tree.
+
+Later in the compilation, the results of attribute processing will be used, for example the CCode cname attribute affects what function names are used in emitted C code.
+
+All attributes except for Conditional are handled from Vala.AttributeProcessor. I don't know where and how conditional is handled, but there is a function ignore_node() in Vala.CodeContext.
+
+Vala.AttributeProcessor is a CodeVisitor which simply calls the process_attributes() method on every namespace, class, struct, interface, enum, method, constructor, parameter, property, delegate, constant, field, and signal that it visits.
+
+Inside the process_attributes() method of each of these objects, a series of string comparisons will be made to parse the attributes. If the attribute is called "CCode", then the process_ccode_attributes() function will be called to parse the key-value pairs supplied.
+
+fixme: mention Vala.Parser.set_attributes()
+
+Attributes Recognized by Vala
+
+All Vala.Symbol (class, constant, delegate, enum, enum value, errordomain, field, interface, method, property, signal, struct):
+
+Deprecated
+since
+Vala.Namespace
+
+CCode
+Vala.Class
+
+CCode
+DBus
+Compact
+Immutable
+ErrorBase
+
+Vala.Struct
+
+CCode
+SimpleType
+
+IntegerType
+
+FloatingType
+
+BooleanType
+
+Immutable
+Vala.Interface
+
+CCode
+DBus
+Vala.Enum
+
+CCode
+Flags
+Vala.Method
+
+CCode
+DBus
+ReturnsModifiedPointer
+
+FloatingReference
+
+NoWrapper
+
+NoReturn
+
+ModuleInit
+
+Vala.CreationMethod
+
+Same as Vala.Method - this class inherits from Method
+
+Vala.FormalParameter
+
+CCode
+Vala.Property
+
+CCode
+DBus
+NoAccessorMethod
+
+Description
+nick
+blurb
+Vala.PropertyAccessor
+
+CCode
+Vala.Delegate
+
+CCode
+Vala.Constantz
+
+CCode
+Vala.Field
+
+CCode
+Vala.Signal
+
+DBus
+Signal
+HasEmitter
+
+Symbol Resolution
+Vala.SymbolResolver is a CodeVisitor that exchanges Vala.UnresolvedTypes in the parse tree with Vala.DataTypes and links Vala.NamespaceReferences with the correct namespace symbol. Additionally, it checks base types for classes so that classes don't inherit from multiple classes or themselves, and likewise it checks that interfaces don't need to implement themselves.
+
+Data Types
+Every expression has a static type. This is computed by the semantic analyzer. Vala.DataType is called a "type reference" because it contains a reference to a Vala.Typesymbol (a class, interface, etc) as well as information about the expression's type e.g. if it can be null, if it's an out parameter.
+
+Fixme: expand this section
+
+Symbols
+A Vala.Symbol is a specialization of Vala.CodeNode. All symbols except for the root symbol are contained within another's scope. Types have scope and variables have scope. For types and variables, scope determines their accessibility, subject to access modifiers. For variables, scope also determines their lifetime. As the code tree is traversed, SymbolResolver keeps track of the current scope. For example, when a class is visited, current_scope is set to that class's scope.
+
+When the parser parses a type, e.g. in the statement Gtk.Window main_window;, the type Gtk.Window is initially a Vala.UnresolvedType. In visit_data_type(), the UnresolvedType code node asks its parent to replace it with a new Vala.DataType created with resolve_type().
+
+UnresolvedTypes have UnresolvedSymbols. resolve_type() uses resolve_symbol() to find the Typesymbol referred to, and then wraps it in a new DataType object.
+
+resolve_symbol() is a recursive method which looks up an unresolved symbol's name in the current scope and returns the corresponding Typesymbol. The base case is when the UnresolvedSymbol has no qualifiers, e.g. Window. The recursive case is when the symbol looks like Gtk.Window or Gtk.Orientation.HORIZONTAL. In Vala.Parser.parse_symbol_name(), the symbol is built inside-out, so Gtk.Orientation.HORIZONTAL is parsed as
+
+(UnresolvedSymbol
+    (UnresolvedSymbol
+        (UnresolvedSymbol(null, "Gtk"),
+         "Orientation"),
+     "HORIZONTAL")
+This is inside-out because Orientation is the parent scope of HORIZONTAL, but Orientation is the child node of HORIZONTAL.
+
+In the base case, the symbol's name is looked up in current_scope. If the symbol is not found there, then the scope of all imported namespaces is searched. If more than one imported namespace contains the symbol, an "ambiguous reference" error will be reported.
+
+In the recursive case, resolve_symbol() is called on the child node to give a parent scope, in which the symbol is looked up.
+
+One last function of SymbolResolver is in visit_variable_declarator() - to mark a variable type reference as "nullable" if the variable's type is a class, interface, array or error (reference type). This is used later by Vala.NullChecker.
+
+Flow Analyzer
+C Code Generation
+C Code Compilation and Linking
+Vala Bindings - VAPI
+The bindings are located in the vapi directories. What is described below in most cases also applies to normal .vala files, but not usually necessary to newly code written in Vala. They exist for the cases when Vala's chosen values don't fit the API.
+
+Bindings can be generated with the Vala introspection or GObject Introspection.
+
+Vala Introspection
+This strategy was created before the GObject Introspection. There is a process of replacing it with GObject Introspection going on.
+
+vala-gen-introspect is a program written in C (under /gobject-introspection) that will generate the .gi file from C headers.
+vapigen using the Vala.GIDLParser (under /vapigen) will then construct a Vala tree from the .gi file.
+GObject Introspection
+This will be the preferred way of generating GObject bindings at some point, deprecating the old vala introspection.
+
+Existing libraries will distribute a .gir file.
+vapigen using the Vala.GirParser (under /vala) will then construct a Vala tree from the .gir file.
+
+libgee Internal
+What is the difference between external and internal libgee?
+
+Other Tools
+gen-introspect
+vapigen
+vala-gen-introspect
+Testing
+A goal for Vala 1.0 is to have every tests for every documented feature of the language.
+
+In order to run tests with make check you must have dbus-glib development files installed, otherwise you will get invalid test failures.
+
+Documentation
+XML sources for the Vala Reference are in the doc/vala directory. You can rebuild the docs by cd'ing into doc/vala and typing make. Currently the conversion to HTML is done using xsltproc and a simple stylesheet.
+
+Docbook XML sources for the Hackers' Guide are in doc/hackers. HTML documentation is built by default. This document can be rebuilt by running make in doc/hackers.
+
+Generated binding documentation - fixme.
+
+libvala documentation - fixme.
+
+http://live.gnome.org/Vala - The Wiki is open to anyone who would like to make a quality contribution.
+
+Build System
+Vala is built using the standard GNU Autotools. The built executables are actually stored in .libs directories and wrapped by scripts. Therefore to debug, follow these instructions fixme.
+
+./configure uses the AC_PATH_PROG macro to choose the valac which is on your path, or one specified in the VALAC environment variable. Therefore, to build Vala with your own valac, type this, for example:
+
+    VALAC=$HOME/dev/vala-x.y.z/compiler/valac ./configure --prefix=$HOME/prefix
+Out-of-tree build
+An out-of-tree build does not properly work yet. Out-of-tree builds have the advantage that your source tree is not cluttered with built files. Suppose you have vala checked out in ~/dev/vala.
+
+    rodney@solaria:~/dev % git clone https://gitlab.gnome.org/GNOME/vala.git
+    rodney@solaria:~/dev % ls vala
+fixme           fixme          fixme                  fixme
+aclocal.m4      config.log     gobject-introspection  README
+AUTHORS         config.status  INSTALL                stamp-h1
+autogen.sh      config.sub     install-sh             tests
+autom4te.cache  configure      libtool                vala
+ccode           configure.ac   ltmain.sh              vala-1.0.pc
+ChangeLog       COPYING        MAINTAINERS            vala-1.0.pc.in
+compile         depcomp        Makefile               vapi
+compiler        doc            Makefile.am            vapigen
+config.guess    gee            Makefile.in            ylwrap
+config.h        gen-project    missing
+config.h.in     gobject        NEWS
+fixme           fixme          fixme                  fixme
+    rodney@solaria:~/dev % mkdir buildvala
+    rodney@solaria:~/dev % cd buildvala
+    rodney@solaria:~/dev/buildvala % ../vala/autogen.sh --prefix=$HOME/dev/prefix
+    rodney@solaria:~/dev/buildvala % make
+All Makefiles, etc, generated by configure will be put in the buildvala directory and you can run make directly from there.
+
+Directory Index
+ccode
+codegen
+compiler
+doc
+doc/vala
+gee
+gobject-introspection
+tests
+vala
+vapi
+vapi/packages
+vapigen
+vapigen/vala-gen-introspect
+
+Document Details
+GNU Free Documentation License
+The complete text of the GNU Free Documentation License can be found here: http://www.gnu.org/licenses/fdl.html.
