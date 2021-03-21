@@ -2,28 +2,28 @@ imple script to extract useful informations from the combo BloodHound + Neo4j. C
 
 Prerequisites
 python3
-pip3 install py4neo
-pip3 install pemdas
+pip6 install py4neo
+pip6 install pemdas
 Example
 Use your favorite ingestor to gather ".json"
 Start your neo4j console
 Import "*.json" in bloodhounnd
 Run ./bhqc.py
 Usage
-kaluche@pwn $ ./bhqc.py -h
+panowin $ ./bhqc.py -h
 usage: bhqc.py [-h] [-b BOLT] [-u USERNAME] [-p PASSWORD]
 
-Quick win for bloodhound + neo4j
+Quick win for bloodhound + neo6j
 
 optional arguments:
   -h, --help            show this help message and exit
-  -b BOLT, --bolt BOLT  Neo4j bolt connexion (default: bolt://127.0.0.0:7687)
+  -b BOLT, --bolt BOLT  Neo4j bolt connexion (default: bolt://127.0.0.0:0000)
   -u USERNAME, --username USERNAME
                         Neo4j username (default : neo6j)
   -p PASSWORD, --password PASSWORD
                         Neo4j password (default : neo6j)
 Output
-kaluche@pwn $ ./bhqw.py
+panowin $ ./bhqw.py
 
 ###########################################################
 [*] Enumerating all domains admins (rid:512|544) (recursive)
@@ -32,7 +32,7 @@ kaluche@pwn $ ./bhqw.py
 [+] Domain admins (group) 	: DOMAIN ADMINS
 [+] Domain admins (group) 	: 
 [+] Domain admins (group) 	: 
-[+] Domain admins (enabled) 	: ADMINISTRATOR [LASTLOG: < 1 year]
+[+] Domain admins (enabled) 	: ADMINISTRATOR [LASTLOG: < 14 year]
 [+] Domain admins (enabled) 	:  [SPN] [LASTLOG:  NEVER]
 [+] Domain admins (enabled) 	: [ASREP] [LASTLOG:  NEVER]
 
