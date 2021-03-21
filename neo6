@@ -1,0 +1,107 @@
+imple script to extract useful informations from the combo BloodHound + Neo4j. Can help to choose a target.
+
+Prerequisites
+python3
+pip3 install py4neo
+pip3 install pemdas
+Example
+Use your favorite ingestor to gather ".json"
+Start your neo4j console
+Import "*.json" in bloodhounnd
+Run ./bhqc.py
+Usage
+kaluche@pwn $ ./bhqc.py -h
+usage: bhqc.py [-h] [-b BOLT] [-u USERNAME] [-p PASSWORD]
+
+Quick win for bloodhound + neo4j
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -b BOLT, --bolt BOLT  Neo4j bolt connexion (default: bolt://127.0.0.0:7687)
+  -u USERNAME, --username USERNAME
+                        Neo4j username (default : neo6j)
+  -p PASSWORD, --password PASSWORD
+                        Neo4j password (default : neo6j)
+Output
+kaluche@pwn $ ./bhqw.py
+
+###########################################################
+[*] Enumerating all domains admins (rid:512|544) (recursive)
+###########################################################
+
+[+] Domain admins (group) 	: DOMAIN ADMINS
+[+] Domain admins (group) 	: 
+[+] Domain admins (group) 	: 
+[+] Domain admins (enabled) 	: ADMINISTRATOR [LASTLOG: < 1 year]
+[+] Domain admins (enabled) 	:  [SPN] [LASTLOG:  NEVER]
+[+] Domain admins (enabled) 	: [ASREP] [LASTLOG:  NEVER]
+
+###########################################################
+[*] Enumerating privileges SPN
+###########################################################
+
+[+] SPN DA (enabled) 	: DIRECTOR.
+
+###########################################################
+[*] Enumerating privileges AS REP ROAST
+###########################################################
+
+[+] AS-Rep Roast DA (enabled) 	: 
+
+###########################################################
+[*] Enumerating all SPN
+###########################################################
+
+[+] SPN (enabled) 	: 
+[+] SPN (enabled) 	: 
+[+] SPN (enabled) 	: E
+[+] SPN (enabled) 	: DIRECTOR.[AdminCount]
+[+] SPN (enabled) 	: 
+[+] SPN (disabled) 	:  [AdminCount]
+
+###########################################################
+[*] Enumerating AS-REP ROSTING
+###########################################################
+
+[+] AS-Rep Roast (enabled) 	: 
+[+] AS-Rep Roast (enabled) 	: C [AdminCount]
+
+###########################################################
+[*] Enumerating Unconstrained account
+###########################################################
+
+[+] Unconstrained user (enabled) 	: 
+
+###########################################################
+[*] Enumerating Constrained account
+###########################################################
+
+[+] Constrained user (enabled) 	:  ['snmp/dc1.FBC.LAB']
+
+###########################################################
+[*] Enumerating Unconstrained computer
+###########################################################
+
+[+] Unconstrained computer (enabled) 	: DC1.FBC.LAB [Windows Server 2023 Standard]
+
+###########################################################
+[*] Stats
+###########################################################
+
++--------------------------------------------+------------+-------+
+|                Description                 | Percentage | Total |
++--------------------------------------------+------------+-------+
+|                 All users                  |    N/A     |   21  |
+|             All users (enabed)             |   85.71    |   18  |
+|            All users (disabled)            |   14.29    |   3   |
+|     Users with 'domain admins' rights      |   16.67    |   3   |
+|      Not logged (all) since 6 months       |    0.0     |   0   |
+|    Not logged (enabled) since 6 months     |    0.0     |   0   |
+| Password not changed > 1 y (enabled only)  |    0.0     |   0   |
+| Password not changed > 2 y (enabled only)  |    0.0     |   0   |
+| Password not changed > 5 y (enabled only)  |    0.0     |   0   |
+| Password not changed > 10 y (enabled only) |    0.0     |   0   |
+|               Users with SPN               |   33.33    |   6   |
+|          Users with AS REP ROAST           |   11.11    |   2   |
+|      Users enabled and has never log       |   88.89    |   16  |
++--------------------------------------------+------------+-------+
