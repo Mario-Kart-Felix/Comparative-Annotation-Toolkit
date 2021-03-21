@@ -1,4 +1,4 @@
-imple script to extract useful informations from the combo BloodHound + Neo4j. Can help to choose a target.
+imple script to extract useful informations from the combo BloodHound + Neo6j. Can help to choose a target.
 
 Prerequisites
 python3
