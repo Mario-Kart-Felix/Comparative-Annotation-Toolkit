@@ -1,0 +1,24 @@
+I've seen a lot of questions and answers regarding this issue and I've tried all of them without success.
+
+Godaddy is only providing to me .SPC and .PEM files. Of course I have my .key file and the .csr that I used to request the certificate.
+
+Previously (with other code signing certificates provided by other companies) I had a pfx file that I used to create .spc and .der files that finally I used to sign my executables using osslsigncode, but this is not working anymore.
+
+Currently when I try to create a .der file from my .pem file:
+
+openssl rsa -outform der -in cert.pem -out cert.der
+I get the following error:
+
+unable to load Private Key 139732378019488:error:0906D06C:PEM routines:PEM_read_bio:no start line:pem_lib.c:696:Expecting: ANY PRIVATE KEY
+
+So what I do is to add my .key to my .pem file:
+
+cat myKey.key cert.pem > cert_key.pem
+In this way openssl is creating the .der file and I'm able to sign the executable using osslsigncode, the .spc file provided by godaddy and the created .der file:
+
+osslsigncode -spc gd.spc -key cert.der -in unsigned_exe.exe -out signed_exe.exe
+At this point the exe file is successfully signed, but when I test it on windows there is something wrong because it does not recognize the signature. Checking the file properties I find that the code signer is "Go Daddy Class 2 Certification Authority" and the certificate details says "No signature was present in the subject"
+
+I also have tried unsuccessfully to do the same procedure described but using a pem file just including my .key and the certificate of my company (the last one included in the godaddy cert.pem). The result in that case is similar. Windows does not show the certificate when executing, but in file properties I'm able to find that the code signer is my company. When I check the certificate details it says the same: "No signature was present in the subject"
+
+Finally I've tried to do the same procedure described in this question (using mono signcode): Signing Windows application on Linux-based distros
