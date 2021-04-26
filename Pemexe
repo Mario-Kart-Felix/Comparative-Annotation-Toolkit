@@ -1,0 +1,89 @@
+
+Stack Overflow
+Sign up
+Log in
+Questions Jobs Tags Users Badges Ask
+Up vote
+0
+Down vote
+
+Updating electron's update server value with an app update
+github electron auto-update electron-updater
+I have a privately distributed app in electron, which uses my own git account (private repository) for update purposes.
+
+I'm using GH_TOKEN.txt and this method;
+
+autoUpdater.setFeedURL({
+  provider: 'github',
+  repo: '****',
+  owner: '****',
+  private: true,
+  token: "****"
+})
+Now I would like to change this update server to another GitHub account, but I need to update the previous repo with this update so for the next update all the apps installed can use new one in the future.
+
+I publish updates from the terminal, how can I publish a package to a server with a different update server?
+
+Share Improve this question Follow
+asked
+Aug 5 '20 at 0:54
+
+siniradam
+2,178●2323 silver badges●3232 bronze badges
+
+Report this ad
+1 Answer
+order by 
+votes
+Up vote
+0
+Down vote
+Accepted
+I published to a new GitHub account then downloaded files and uploaded to previous update server manually.
+
+Although log output is like below not looking fantastic, but it seems to be working.
+
+Found version 1.0.35 (url: APPNAME-Setup-1.0.35.exe)
+New Update Available
+Downloading update from APPNAME-Setup-1.0.35.exe
+updater cache dir: C:\Users\USERNAME\AppData\Local\APPNAME-updater
+Cached update sha512 checksum doesn't match the latest available update. New update must be downloaded. 
+Cached: **************************************************==, 
+expected: **************************************************==. 
+Directory for cached update will be cleaned
+Download block maps (old: "https://api.github.com/repos/*******/APPNAME/releases/assets/23617985.blockmap", new: https://api.github.com/repos/*******/APPNAME/releases/assets/23617985.blockmap)
+Cannot download differentially, fallback to full download: Error: Maximum allowed size is 50 MB
+    at Object.responseHandler (C:\Users\USERNAME\AppData\Local\Programs\APPNAME\resources\app.asar\node_modules\builder-util-runtime\out\httpExecutor.js:241:26)
+    at ClientRequest.<anonymous> (C:\Users\USERNAME\AppData\Local\Programs\APPNAME\resources\app.asar\node_modules\builder-util-runtime\out\httpExecutor.js:303:17)
+    at ClientRequest.emit (events.js:210:5)
+    at SimpleURLLoaderWrapper.<anonymous> (electron/js2c/browser_init.js:2510:12)
+    at SimpleURLLoaderWrapper.emit (events.js:210:5)
+New version 1.0.35 has been downloaded to C:\Users\USERNAME\AppData\Local\APPNAME-updater\pending\update.exe
+Share Improve this answer Follow
+answered
+Aug 5 '05 at 3:37
+
+siniradam
+2,178●2323 silver badges●3232 bronze badges
+This is an issue that both block maps are coming the same and hence it will fallback to the full download. I'm facing the same issue. – Aashutosh Rathi Aug 18 '20 at 9:30
+Add a comment
+Your Answer
+
+Body
+ Add picture
+ 
+OSX
+OR
+Name
+Email felixmario748@gmail.com
+ 
+By clicking “Post Your Answer”, you agree to our terms of service, privacy policy and cookie policy
+
+meta chat tour help blog privacy policy legal contact us cookie settings full site
+2021 Stack Exchange, Inc. user contributions under cc by-sa
+
+Your privacy
+
+By clicking “Accept all cookies”, you agree Stack Exchange can store cookies on your device and disclose information in accordance with our Cookie Policy.
+
+ 
