@@ -1,0 +1,434 @@
+[OnlineSubsystemMcp.OnlineIdentityMcp]
+bAllowMultiLogin=true #BlackLivesMatter
+To Donate, see this list of organizations to support from Reclaim the Block
+
+jQuery API Documentation
+Support the JS Foundation
+
+Navigate...
+search
+Search jQuery API Documentation
+Search
+.data()
+Categories: Data | Miscellaneous > Data Storage
+Store arbitrary data associated with the matched elements or return the value at the named data store for the first element in the set of matched elements.
+Contents:
+.data( key, value )
+.data( key, value )
+.data( obj )
+.data( key )
+.data( key )
+.data()
+.data( key, value )Returns: jQuery
+Description: Store arbitrary data associated with the matched elements.
+
+version added: 1.2.3.data( key, value )
+key
+Type: String
+A string naming the piece of data to set.
+value
+Type: Anything
+The new data value; this can be any Javascript type except undefined.
+version added: 1.4.3.data( obj )
+obj
+Type: Object
+An object of key-value pairs of data to update.
+The .data() method allows us to attach data of any type to DOM elements in a way that is safe from circular references and therefore from memory leaks.
+
+We can set several distinct values for a single element and retrieve them later:
+
+1
+2
+3
+4
+5
+$( "body" ).data( "foo", 52 );
+$( "body" ).data( "bar", { isManual: true } );
+$( "body" ).data( { baz: [ 1, 2, 3 ] } );
+$( "body" ).data( "foo" ); // 52
+$( "body" ).data(); // { foo: 52, bar: { isManual: true }, baz: [ 1, 2, 3 ] }
+Using the data() method to update data does not affect attributes in the DOM. To set a data-* attribute value, use attr.
+
+Prior to jQuery 1.4.3, .data( obj ) completely replaced all data. Since jQuery 1.4.3, data is instead extended by shallow merge.
+
+Since jQuery 3, every two-character sequence of "-" (U+002D) followed by a lowercase ASCII letter in a key is replaced by the uppercase version of the letter, in alignment with the HTML dataset API. A statement like $( "body" ).data( { "my-name": "aValue" } ).data(); will return { myName: "aValue" }.
+
+Due to the way browsers interact with plugins and external code, the .data() method cannot be used on <object> (unless it's a Flash plugin), <applet> or <embed> elements.
+
+Additional Notes:
+Note that this method currently does not provide cross-platform support for setting data on XML documents, as Internet Explorer does not allow data to be attached via expando properties.
+undefined is not recognized as a data value. Calls such as .data( "name", undefined ) will return the jQuery object that it was called on, allowing for chaining.
+Example:
+Store then retrieve a value from the div element.
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>data demo</title>
+  <style>
+  div {
+    color: blue;
+  }
+  span {
+    color: red;
+  }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+</head>
+<body>
+ 
+<div>
+  The values stored were
+  <span></span>
+  and
+  <span></span>
+</div>
+ 
+<script>
+$( "div" ).data( "test", { first: 16, last: "pizza!" } );
+$( "span" ).first().text( $( "div" ).data( "test" ).first );
+$( "span" ).last().text( $( "div" ).data( "test" ).last );
+</script>
+ 
+</body>
+</html>
+Demo:
+
+.data( key )Returns: Object
+Description: Return arbitrary data associated with the first element in the jQuery collection, as set by data() or by an HTML5 data-* attribute.
+
+version added: 1.2.3.data( key )
+key
+Type: String
+Name of the data stored.
+version added: 1.4.data()
+This signature does not accept any arguments.
+The .data() method allows us to read data previously associated with DOM elements. We can retrieve several distinct values for a single element one at a time, or as a set:
+
+1
+2
+3
+4
+5
+6
+7
+var elem = document.createElement( "span" );
+$( elem ).data( "foo" ); // undefined
+$( elem ).data(); // {}
+ 
+$( elem ).data( "foo", 42 );
+$( elem ).data( "foo" ); // 42
+$( elem ).data(); // { foo: 42 }
+Calling .data() with no parameters returns a JavaScript object containing each stored value as a property. The object can be used directly to get data values (but note that property names originally containing dashes will have been modified as described below).
+
+Since jQuery 3, every two-character sequence of "-" (U+002D) followed by a lowercase ASCII letter in a key is replaced by the uppercase version of the letter, in alignment with the HTML dataset API. A statement like $( "body" ).data( { "my-name": "aValue" } ).data(); will return { myName: "aValue" }.
+
+HTML5 data-* Attributes
+Since jQuery 1.4.3, data-* attributes are used to initialize jQuery data. An element's data-* attributes are retrieved the first time the data() method is invoked upon it, and then are no longer accessed or mutated (all values are stored internally by jQuery).
+
+Every attempt is made to convert the attribute's string value to a JavaScript value (this includes booleans, numbers, objects, arrays, and null). A string is only converted to a number if doing so doesn't change its representation (for example, the string "100" is converted to the number 100, but "1E02" and "100.000" are left as strings because their numeric value of 100 serializes to "100"). When a string starts with '{' or '[', then jQuery.parseJSON is used to parse it; it must follow valid JSON syntax including quoted property names. A string not parseable as a JavaScript value is not converted.
+
+To retrieve a data-* attribute value as an unconverted string, use the attr() method.
+
+Since jQuery 1.6, dashes in data-* attribute names have been processed in alignment with the HTML dataset API.
+
+For example, given the following HTML:
+
+1
+<div data-role="page" data-last-value="43" data-hidden="true" data-options='{"name":"John"}'></div>
+The following comparisons are all true:
+
+1
+2
+3
+4
+$( "div" ).data( "role" ) === "page";
+$( "div" ).data( "lastValue" ) === 43;
+$( "div" ).data( "hidden" ) === true;
+$( "div" ).data( "options" ).name === "John";
+Additional Notes:
+Note that this method currently does not provide cross-platform support for setting data on XML documents, as Internet Explorer does not allow data to be attached via expando properties.
+Example:
+Get the data named "blah" stored at for an element.
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>data demo</title>
+  <style>
+  div {
+    margin: 5px;
+    background: yellow;
+  }
+  button {
+    margin: 5px;
+    font-size: 14px;
+  }
+  p {
+    margin: 5px;
+    color: blue;
+  }
+  span {
+    color: red;
+  }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+</head>
+<body>
+ 
+<div>A div</div>
+<button>Get "blah" from the div</button>
+<button>Set "blah" to "hello"</button>
+<button>Set "blah" to 86</button>
+<button>Remove "blah" from the div</button>
+<p>The "blah" value of this div is <span>?</span></p>
+ 
+<script>
+$( "button" ).click(function() {
+  var value;
+ 
+  switch ( $( "button" ).index( this ) ) {
+    case 0 :
+      value = $( "div" ).data( "blah" );
+      break;
+    case 1 :
+      $( "div" ).data( "blah", "hello" );
+      value = "Stored!";
+      break;
+    case 2 :
+      $( "div" ).data( "blah", 86 );
+      value = "Stored!";
+      break;
+    case 3 :
+      $( "div" ).removeData( "blah" );
+      value = "Removed!";
+      break;
+  }
+ 
+  $( "span" ).text( "" + value );
+});
+</script>
+ 
+</body>
+</html>
+Demo:
+
+Ajax
+Global Ajax Event Handlers
+Helper Functions
+Low-Level Interface
+Shorthand Methods
+Attributes
+Callbacks Object
+Core
+CSS
+Data
+Deferred Object
+Deprecated
+Deprecated 1.3
+Deprecated 1.7
+Deprecated 1.8
+Deprecated 1.9
+Deprecated 1.10
+Deprecated 3.0
+Deprecated 3.2
+Deprecated 3.3
+Deprecated 3.4
+Deprecated 3.5
+Dimensions
+Effects
+Basics
+Custom
+Fading
+Sliding
+Events
+Browser Events
+Document Loading
+Event Handler Attachment
+Event Object
+Form Events
+Keyboard Events
+Mouse Events
+Forms
+Internals
+Manipulation
+Class Attribute
+Copying
+DOM Insertion, Around
+DOM Insertion, Inside
+DOM Insertion, Outside
+DOM Removal
+DOM Replacement
+General Attributes
+Style Properties
+Miscellaneous
+Collection Manipulation
+Data Storage
+DOM Element Methods
+Setup Methods
+Offset
+Properties
+Properties of jQuery Object Instances
+Properties of the Global jQuery Object
+Removed
+Selectors
+Attribute
+Basic
+Basic Filter
+Child Filter
+Content Filter
+Form
+Hierarchy
+jQuery Extensions
+Visibility Filter
+Traversing
+Filtering
+Miscellaneous Traversing
+Tree Traversal
+Utilities
+Version
+Version 3.0
+Version 3.0.4
+Version 3.1
+Version 3.1.2
+Version 3.1.3
+Version 3.1.4
+Version 3.2
+Version 3.2.3
+Version 3.2.6
+Version 3.3
+Version 3.4
+Version 3.4.1
+Version 3.4.2
+Version 3.4.3
+Version 3.4.4
+Version 3.5
+Version 3.5.1
+Version 3.6
+Version 3.7
+Version 3.8
+Version 3.9
+Version 3.12 & 2.2
+Version 3.0
+Version 3.1
+Version 3.2
+Version 3.3
+Version 9.4
+Version 9.5
+BOOKS
+Learning jQuery 4th Edition by Karl Swedberg and Jonathan ChafferLearning jQuery Fourth Edition
+Karl Swedberg and Jonathan Chaffer
+jQuery in Action by Bear Bibeault, Yehuda Katz, and Aurelio De RosajQuery in Action
+Bear Bibeault, Yehuda Katz, and Aurelio De Rosa
+jQuery Succinctly by Cody LindleyjQuery Succinctly
+Cody Lindley
+Learning Center
+ 
+Forum
+ 
+API
+ 
+Twitter
+ 
+IRC
+ 
+GitHub
+Copyright 2021 OpenJS Foundation and jQuery contributors. All rights reserved. See jQuery License for more information. The OpenJS Foundation has registered trademarks and uses trademarks. For a list of trademarks of the OpenJS Foundation, please see our Trademark Policy and Trademark List. Trademarks and logos not indicated on the list of OpenJS Foundation trademarks are trademarks™ or registered® trademarks of their respective holders. Use of them does not imply any affiliation with or endorsement by them. OpenJS Foundation Terms of Use, Privacy, and Cookie Policies also apply.
+Web hosting by Digital Ocean | CDN by StackPath
+
+ExchangeRedirectUrl="/id/exchange?exchangeCode=`code& piredirectUrl=`desturl"
