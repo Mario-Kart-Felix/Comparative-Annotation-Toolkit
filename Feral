@@ -1,0 +1,241 @@
+
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+using: history completion feral-core feline accessors ;
+in: mini
+
+feral-config:winui? assert
+
+private
+
+: minibuffer-update-caret-pos
+    minibuffer dot>> offset>> textview-char-width *
+    0
+    textview-set-caret-pos ;
+
+: repaint-minibuffer
+    winui-hide-caret
+    minibuffer-get-text :> s
+    0 0 s winui-minibuffer-text-out
+    s string-length 0 winui-minibuffer-clear-eol
+    winui-show-caret ;
+
+public
+
+: minibuffer-set-text                   // string -> void
+    1 ?enough verify-string
+    minibuffer-get-text over sequence= [ drop ] [
+        minibuffer dot>> line>> text<<
+        winui-minibuffer-invalidate
+    ] if ;
+
+private
+
+: minibuffer-accept
+    minibuffer-get-text minibuffer-contents!
+
+    current-history [
+        prompt length minibuffer-contents tail update-history
+        nil current-history!
+    ] when
+
+    "" minibuffer-set-text
+    nil set-completion-provider
+    winui-minibuffer-exit ;
+
+: minibuffer-cancel
+    minibuffer-get-text prompt = [
+        nil minibuffer-contents!
+        "" minibuffer-set-text
+        nil current-history!
+        nil set-completion-provider
+        winui-minibuffer-exit
+    ] [
+        prompt minibuffer-set-text
+        prompt length
+        [ minibuffer dot>> offset<< ]
+        [ textview-char-width * 0 textview-set-caret-pos ]
+        bi
+    ] if ;
+
+: minibuffer-set-text-from-history ( s ) // string/nil -> void
+    s nil? ?exit
+    prompt s +
+    [ minibuffer-set-text ]
+    [ string-length dup minibuffer dot>> offset<< textview-char-width * 0 textview-set-caret-pos ]
+    bi
+
+    winui-minibuffer-invalidate ;
+
+: minibuffer-previous-history
+    history-previous minibuffer-set-text-from-history ;
+
+: minibuffer-next-history
+    history-next minibuffer-set-text-from-history ;
+
+: minibuffer-set-completion-text        // string/nil -> void
+    minibuffer-set-text-from-history ;
+
+: minibuffer-complete
+    completion-provider nil? ?exit
+
+    prompt length minibuffer-get-text tail
+    completion-provider call [
+        // -> string
+        editor:add-undo-line-edit
+        minibuffer-set-completion-text
+    ] when* ;
+
+: lookup-key                            // key -> symbol/nil
+    minibuffer-keymap at ;
+
+defer minibuffer-insert-char
+
+global minibuffer-dispatch-hook
+
+: minibuffer-dispatch                   // fixnum/char -> void
+
+    current-buffer minibuffer? assert
+
+    // REVIEW
+    // call the hook function(s) with the argument still on the stack
+    ' minibuffer-dispatch-hook feral-hooks:run-hooks
+
+    // the hook function may have changed the stack
+    dup nil? [ drop ] ?return
+
+    1 ?enough :> key
+
+    current-command last-command!
+    nil current-command!
+
+    mod-count :> saved-mod-count
+
+    key lookup-key [
+        dup current-command! call-symbol // REVIEW safe-call-symbol
+        minibuffer-update-caret-pos
+        winui-minibuffer-invalidate
+    ] [
+        key printable-char? [
+            minibuffer-insert-char
+            minibuffer-update-caret-pos
+            repaint-minibuffer
+        ] when*
+    ] if*
+
+    mod-count saved-mod-count > [ reset-completion ] when ;
+
+: winui-minibuffer-keydown              // fixnum -> void
+    minibuffer-dispatch ;
+
+: winui-minibuffer-char                 // char -> void
+    minibuffer-dispatch ;
+
+public
+
+: message                               // string -> void
+    current-buffer minibuffer? [ drop ] [ minibuffer-set-text ] if ;
+
+' message is feral-core:message
+
+: clear-message
+    current-buffer minibuffer? [ "" minibuffer-set-text ] unless ;
+
+' clear-message is feral-core:clear-message
+
+: show-message-briefly                  // string -> void
+    current-buffer minibuffer? assert
+
+    minibuffer-get-text :> saved-text
+    copy-dot :> saved-dot
+
+    minibuffer-set-text
+    repaint-minibuffer
+    1000 sleep
+    saved-text minibuffer-set-text
+    repaint-minibuffer
+    saved-dot dot! ;
+
+: minibuffer-run
+    [
+        current-buffer minibuffer parent<<
+        minibuffer current-buffer!
+        editor:reset-undo
+        editor:reset-redo
+        reset-completion
+        minibuffer-update-caret-pos
+        winui-minibuffer-main
+    ] keep-current-buffer ;
+
+global minibuffer-accept-char-result    // -> char/nil
+
+: minibuffer-accept-char-hook           // char/fixnum -> char/fixnum/nil
+    dup :> key
+
+    key printable-char? [
+        key minibuffer-accept-char-result!
+        "" minibuffer-set-text
+        unmark
+        repaint-minibuffer
+        winui-minibuffer-exit
+    ] [
+        nil minibuffer-accept-char-result!
+    ] if
+
+    drop nil ;
+
+: minibuffer-accept-char                // prompt -> char/nil
+    verify-string prompt!
+    nil minibuffer-accept-char-result!
+    ' minibuffer-accept-char-hook ' minibuffer-dispatch-hook feral-hooks:add-hook
+
+    prompt
+    [ minibuffer-set-text ]
+    [ string-length minibuffer dot>> offset<< ]
+    bi
+
+    minibuffer-run
+
+    ' minibuffer-accept-char-hook ' minibuffer-dispatch-hook feral-hooks:remove-hook
+
+    minibuffer-accept-char-result ;
+
+: minibuffer-accept-string              // prompt -> string/nil
+    verify-string prompt!
+    nil minibuffer-contents!
+
+    prompt
+    [ minibuffer-set-text ]
+    [ string-length minibuffer dot>> offset<< ]
+    bi
+
+    minibuffer-run
+
+    minibuffer-contents [ prompt length minibuffer-contents tail ] [ nil ] if ;
+
+: minibuffer-accept-string/2            // prompt default -> string/nil
+    2 ?enough
+    "" or verify-string :> default
+    verify-string prompt!
+    nil minibuffer-contents!
+
+    prompt default +
+    [ minibuffer-set-text ]
+    [ string-length minibuffer dot>> offset<< ]
+    bi
+
+    minibuffer-run
+
+    minibuffer-contents [ prompt length minibuffer-contents tail ] [ nil ] if ;
