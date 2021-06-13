@@ -1,0 +1,37 @@
+o png.
+
+One way to do it would be this: Drawing an SVG file on a HTML5 canvas
+
+But ideally i'd want backend to take just information on configuration like below and build picture there.
+
+ {
+  face: {
+    eyes: 3,
+    nose: 1,
+    hair: 4,
+    skin: 3
+  },
+  colors: {
+    eyes: 3,
+    general: 1,
+    nose: 4
+  },
+  accessories: [{
+    {
+      name: 'hat',
+      x: 30,
+      y: 10,
+      type: 3
+    }, {
+      name: 'sticker_star',
+      x: 20,
+      y: 10,
+      type: 1
+    }, {
+      name: 'glasses',
+      x: 550,
+      y: 30,
+      type: 1
+    }
+  }]
+}
